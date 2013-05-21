@@ -110,12 +110,13 @@ public:
 		fs["Camera_Matrix"] >> cameraMatrix;
 		fs["Distortion_Coefficients"] >> distCoeffs;
 		fs["Avg_Reprojection_Errors"] >> avgReprojErr; 
+		interprate();
 	}	
 	
 	void interprate()
 	{
 		goodInput = true;
-        inputType = INVALID;
+        inputType = IP;
         if(!cameraType.compare("IP")) inputType = IP;
         if(!cameraType.compare("USB")) inputType = USB;
         if (inputType == INVALID)
@@ -222,6 +223,8 @@ int main(int argc, char* argv[])
 		cout << " Invalid input detected " << endl;
 		return -1;
 	}
+	else
+		cout << "Settings accepted" << endl;
 	
 	fs.open(s.leftParams, FileStorage::READ);
 	if(!fs.isOpened())
@@ -234,11 +237,14 @@ int main(int argc, char* argv[])
 	
 	if(!LeftCam.goodInput)
 	{
-		cout << " Invalid input detected " << endl;
+		cout << " Left Camera parameters not accepted " << endl;
 		return -1;
 	}
+	else
+		cout << "Left Camera opened" << endl;
+	waitKey(30);
 	
-	fs.open(inputSettingsFile, FileStorage::READ);
+	fs.open(s.rightParams, FileStorage::READ);
 	if(!fs.isOpened())
 	{
 		cout << "Could not open the right parameters file: \"" << s.rightParams << "\"" << endl;
@@ -249,7 +255,9 @@ int main(int argc, char* argv[])
 	
 	if(!RightCam.goodInput)
 	{
-		cout << " Invalid input detected " << endl;
+		cout << " Right Camera parameters not accepted " << endl;
 		return -1;
 	}	
+	else
+		cout << "Right Camera opened" << endl;
 }

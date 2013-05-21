@@ -96,6 +96,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named ../build/intrinsic
+
+# Build rule for target.
+../build/intrinsic: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 ../build/intrinsic
+.PHONY : ../build/intrinsic
+
+# fast build rule for target.
+../build/intrinsic/fast:
+	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/build
+.PHONY : ../build/intrinsic/fast
+
+#=============================================================================
 # Target rules for targets named ../build/stereo
 
 # Build rule for target.
@@ -132,18 +145,46 @@ calibrate_stereo.cpp.s:
 	$(MAKE) -f CMakeFiles/../build/stereo.dir/build.make CMakeFiles/../build/stereo.dir/calibrate_stereo.cpp.s
 .PHONY : calibrate_stereo.cpp.s
 
+find_intrinsic.o: find_intrinsic.cpp.o
+.PHONY : find_intrinsic.o
+
+# target to build an object file
+find_intrinsic.cpp.o:
+	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/find_intrinsic.cpp.o
+.PHONY : find_intrinsic.cpp.o
+
+find_intrinsic.i: find_intrinsic.cpp.i
+.PHONY : find_intrinsic.i
+
+# target to preprocess a source file
+find_intrinsic.cpp.i:
+	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/find_intrinsic.cpp.i
+.PHONY : find_intrinsic.cpp.i
+
+find_intrinsic.s: find_intrinsic.cpp.s
+.PHONY : find_intrinsic.s
+
+# target to generate assembly for a file
+find_intrinsic.cpp.s:
+	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/find_intrinsic.cpp.s
+.PHONY : find_intrinsic.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
 	@echo "... all (the default if no target is provided)"
 	@echo "... clean"
 	@echo "... depend"
+	@echo "... ../build/intrinsic"
 	@echo "... ../build/stereo"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... calibrate_stereo.o"
 	@echo "... calibrate_stereo.i"
 	@echo "... calibrate_stereo.s"
+	@echo "... find_intrinsic.o"
+	@echo "... find_intrinsic.i"
+	@echo "... find_intrinsic.s"
 .PHONY : help
 
 

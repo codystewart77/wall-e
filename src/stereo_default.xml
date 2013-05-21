@@ -19,8 +19,8 @@
 		<Output_File_Name>"output.xml"</Output_File_Name>
 		
 		<!-- The calibration files fdr the two cameras -->
-		<Left_Parameters>"AXIS152.xml"</Left_Parameters>
-		<Right_Parameters>"AXIS152.xml"</Right_Parameters>		
+		<Left_Parameters>"../savefiles/AXIS151.xml"</Left_Parameters>
+		<Right_Parameters>"../savefiles/AXIS152.xml"</Right_Parameters>		
 
    </Settings>
 </opencv_storage>
