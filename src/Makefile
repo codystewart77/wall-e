@@ -96,41 +96,41 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named ../build/intrinsic
+# Target rules for targets named ../build/stereo
 
 # Build rule for target.
-../build/intrinsic: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 ../build/intrinsic
-.PHONY : ../build/intrinsic
+../build/stereo: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 ../build/stereo
+.PHONY : ../build/stereo
 
 # fast build rule for target.
-../build/intrinsic/fast:
-	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/build
-.PHONY : ../build/intrinsic/fast
+../build/stereo/fast:
+	$(MAKE) -f CMakeFiles/../build/stereo.dir/build.make CMakeFiles/../build/stereo.dir/build
+.PHONY : ../build/stereo/fast
 
-find_intrinsic.o: find_intrinsic.cpp.o
-.PHONY : find_intrinsic.o
+calibrate_stereo.o: calibrate_stereo.cpp.o
+.PHONY : calibrate_stereo.o
 
 # target to build an object file
-find_intrinsic.cpp.o:
-	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/find_intrinsic.cpp.o
-.PHONY : find_intrinsic.cpp.o
+calibrate_stereo.cpp.o:
+	$(MAKE) -f CMakeFiles/../build/stereo.dir/build.make CMakeFiles/../build/stereo.dir/calibrate_stereo.cpp.o
+.PHONY : calibrate_stereo.cpp.o
 
-find_intrinsic.i: find_intrinsic.cpp.i
-.PHONY : find_intrinsic.i
+calibrate_stereo.i: calibrate_stereo.cpp.i
+.PHONY : calibrate_stereo.i
 
 # target to preprocess a source file
-find_intrinsic.cpp.i:
-	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/find_intrinsic.cpp.i
-.PHONY : find_intrinsic.cpp.i
+calibrate_stereo.cpp.i:
+	$(MAKE) -f CMakeFiles/../build/stereo.dir/build.make CMakeFiles/../build/stereo.dir/calibrate_stereo.cpp.i
+.PHONY : calibrate_stereo.cpp.i
 
-find_intrinsic.s: find_intrinsic.cpp.s
-.PHONY : find_intrinsic.s
+calibrate_stereo.s: calibrate_stereo.cpp.s
+.PHONY : calibrate_stereo.s
 
 # target to generate assembly for a file
-find_intrinsic.cpp.s:
-	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/find_intrinsic.cpp.s
-.PHONY : find_intrinsic.cpp.s
+calibrate_stereo.cpp.s:
+	$(MAKE) -f CMakeFiles/../build/stereo.dir/build.make CMakeFiles/../build/stereo.dir/calibrate_stereo.cpp.s
+.PHONY : calibrate_stereo.cpp.s
 
 # Help Target
 help:
@@ -138,12 +138,12 @@ help:
 	@echo "... all (the default if no target is provided)"
 	@echo "... clean"
 	@echo "... depend"
-	@echo "... ../build/intrinsic"
+	@echo "... ../build/stereo"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... find_intrinsic.o"
-	@echo "... find_intrinsic.i"
-	@echo "... find_intrinsic.s"
+	@echo "... calibrate_stereo.o"
+	@echo "... calibrate_stereo.i"
+	@echo "... calibrate_stereo.s"
 .PHONY : help
 
 
