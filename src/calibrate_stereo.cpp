@@ -47,11 +47,14 @@ public:
 		node["OutputFileName"] >> outputFileName;
 		node["Left_Parameters"] >> leftParams;
 		node["Right_Parameters"] >> rightParams;
+		node["Output_FileName"] >> outputFileName;
 		interprate();
 	}
 	
 	void interprate()
 	{
+		showRectified = false;
+		showDisparity = false;
 		goodInput = true;
 		if (boardSize.width <= 0 || boardSize.height <= 0)
         {
@@ -86,6 +89,7 @@ public:
 	float termcrit_iter;
 	float termcrit_eps;
 	bool showRectified;
+	bool showDisparity;
 	bool swap;
 	bool goodInput;
 	string leftParams;
@@ -164,8 +168,20 @@ public:
         Mat result;
         inputCapture.read(result);
         return result;
-    }	
+    }
+
+    void grab()
+    {
+	    inputCapture.grab();	
+    }
 	
+    Mat retrieve()
+    {
+	    Mat result;
+	    inputCapture.retrieve(result);
+	    return result;
+    }
+    
 public:
 	string cameraType;
 	string input;
@@ -179,7 +195,12 @@ public:
 	bool goodInput;
 };
 
-
+static bool runCalibration(double& rms, Settings& s, Camera& LeftCam, Camera& RightCam, vector<vector<Point2f> > lefImagePoints,
+		vector<vector<Point2f> > rightImagePoints, Mat& R, Mat& T, Mat& E, Mat& F);
+static void calcBoardCornerPositions(Size boardSize, float squareSize, vector<Point3f>& corners);
+static void saveStereoParams(Settings& s , Camera& LeftCam, Camera& RightCam, Mat& R, Mat& T, Mat& E,
+		Mat& F, double rms, Mat& leftR, Mat& rightR, Mat& leftP, Mat& rightP, Mat& Q, Mat* leftMap,
+		 Mat* rightMap, Rect& leftValidRoi, Rect& rightValidRoi);
 static void read(const FileNode& node, Settings& x, const Settings& default_value = Settings())
 {
     if(node.empty())
@@ -260,4 +281,225 @@ int main(int argc, char* argv[])
 	}	
 	else
 		cout << "Right Camera opened" << endl;
+
+	/* 
+	** Calibrated cameras have now been loaded 
+	** Now need to start calibrating the stereo system
+	*/
+	Mat leftView, rightView;
+	vector<vector<Point2f> > leftImagePoints, rightImagePoints;
+	Mat R, T, E, F; //Stereovision matrices
+	Mat leftR, rightR, leftP, rightP; //rectification and projection matrices
+	Mat Q; //Disparity to depth mapping
+	Rect leftValidRoi, rightValidRoi; //valid regions of interest
+	Mat leftMap[2];
+	Mat rightMap[2];
+	double rms;		//error
+	Mat canvas;
+	double sf;
+	int w, h;
+	sf = 600./MAX(LeftCam.imageSize.width, LeftCam.imageSize.height);
+	w = cvRound(LeftCam.imageSize.width*sf);
+	h = cvRound(LeftCam.imageSize.height*sf);
+	canvas.create(h,w*2, CV_8UC3);
+	bool isCalibrated = false;
+	Size imageSize;
+	const char ESC_KEY = 27;
+
+	//named windows: left, right and disparity
+	namedWindow("Left",CV_WINDOW_AUTOSIZE);
+	namedWindow("Right",CV_WINDOW_AUTOSIZE);
+	namedWindow("Disparity",CV_WINDOW_AUTOSIZE);
+	namedWindow("Rectified",CV_WINDOW_AUTOSIZE);
+	
+	while(true)
+	{
+		LeftCam.grab();
+		RightCam.grab();
+		leftView = LeftCam.retrieve();
+		rightView = RightCam.retrieve();
+
+		vector<Point2f> leftPointBuff, rightPointBuff;
+
+		char key = (char)waitKey(20);
+		
+		if(key == 'g') //grab the frames
+		{
+			bool leftFound, rightFound;
+			
+			leftFound = findChessboardCorners(leftView, s.boardSize, leftPointBuff,
+					CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
+			rightFound = findChessboardCorners(rightView, s.boardSize, rightPointBuff,
+					CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
+
+			if(leftFound && rightFound)
+			{	
+				Mat leftViewGray, rightViewGray;
+				cvtColor(leftView, leftViewGray, CV_BGR2GRAY);
+				cvtColor(rightView, rightViewGray, CV_BGR2GRAY);
+
+				cornerSubPix( leftViewGray, leftPointBuff, Size(11,11), Size(-1,-1), 
+						TermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 30, 0.1));
+				cornerSubPix( rightViewGray, rightPointBuff, Size(11,11), Size(-1,-1),
+						TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 30, 0.1));
+
+				leftImagePoints.push_back(leftPointBuff);
+				rightImagePoints.push_back(rightPointBuff);
+				
+				cout << "Frames: " << leftImagePoints.size() << endl;
+			}
+		}
+		
+		if( key == ESC_KEY )
+		{
+			return 0;
+		}
+		
+		if( key == 'c' && leftImagePoints.size() > 5)
+		{
+			//run calibration
+			bool ok = runCalibration(rms ,s, LeftCam, RightCam, leftImagePoints, rightImagePoints, R, T, E, F);
+			if(ok)
+			{
+				stereoRectify(LeftCam.cameraMatrix, LeftCam.distCoeffs, RightCam.cameraMatrix,  RightCam.distCoeffs,
+					LeftCam.imageSize, R, T, leftR, rightR, leftP, rightP, Q, CALIB_ZERO_DISPARITY,
+					1, LeftCam.imageSize, &leftValidRoi, &rightValidRoi);
+				initUndistortRectifyMap(LeftCam.cameraMatrix, LeftCam.distCoeffs, leftR, leftP, LeftCam.imageSize,
+						CV_16SC2, leftMap[0], leftMap[1]);
+				initUndistortRectifyMap(RightCam.cameraMatrix, RightCam.distCoeffs, rightR, rightP, RightCam.imageSize,
+						CV_16SC2, rightMap[0], rightMap[1]);						
+				cout << "Calibration succeeded" << endl;
+				isCalibrated = true;
+				cout << "R:" << R << endl;
+				cout << "T:" << T << endl;
+				cout << "E:" << E << endl;
+				cout << "F:" << F << endl;
+				
+			}
+		}
+		
+		if(isCalibrated && key == 'f')
+			s.showRectified = !s.showRectified;
+			
+		if(s.showRectified)
+		{
+			Mat LImg, RImg;
+			remap(leftView, LImg, leftMap[0], leftMap[1], CV_INTER_LINEAR);
+			remap(rightView, RImg, rightMap[0], rightMap[1], CV_INTER_LINEAR);
+			Mat canvasPartL = canvas(Rect(0,0,w,h));
+			Mat canvasPartR = canvas(Rect(w,0,w,h));
+			resize(LImg, canvasPartL, canvasPartL.size(),0,0,CV_INTER_AREA);
+			resize(RImg, canvasPartR, canvasPartR.size(),0,0,CV_INTER_AREA);
+			imshow("Rectified", canvas);
+		}
+		else
+		{
+			imshow("Left", leftView);
+			imshow("Right", rightView);
+		}
+		
+		if(isCalibrated && s.showRectified && key =='d')
+			s.showDisparity = !s.showDisparity;
+			
+		if(showDisparity)
+		{
+		
+		
+		}
+		
+		if(isCalibrated && key == 's')
+		{
+			saveStereoParams( s , LeftCam, RightCam, R, T, E, F, rms, leftR, rightR, leftP, rightP, Q,
+					leftMap, rightMap, leftValidRoi, rightValidRoi);
+		}
+	}
+}
+
+static bool runCalibration(double& rms, Settings& s, Camera& LeftCam, Camera& RightCam, vector<vector<Point2f> > leftImagePoints,
+			vector<vector<Point2f> > rightImagePoints, Mat& R, Mat& T, Mat& E, Mat& F)
+{
+	vector<vector<Point3f> > objPoints(1);
+	calcBoardCornerPositions(s.boardSize, s.squareSize, objPoints[0]);
+	
+	objPoints.resize(leftImagePoints.size(), objPoints[0]);
+	rms = stereoCalibrate( objPoints, leftImagePoints, rightImagePoints, LeftCam.cameraMatrix, LeftCam.distCoeffs,
+			RightCam.cameraMatrix, RightCam.distCoeffs, LeftCam.imageSize, R, T, E, F, 
+			TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30, 1e-6));
+
+			
+}
+
+static void calcBoardCornerPositions(Size boardSize, float squareSize, vector<Point3f>& corners)
+{
+	corners.clear();
+	for( int i =0; i < boardSize.height; ++i)
+		for( int j = 0; j < boardSize.width; ++j)
+			corners.push_back(Point3f(float(j*squareSize), float(i*squareSize),0));
+}
+
+static void saveStereoParams(Settings& s , Camera& LeftCam, Camera& RightCam, Mat& R, Mat& T, Mat& E,
+		Mat& F, double rms, Mat& leftR, Mat& rightR, Mat& leftP, Mat& rightP, Mat& Q, Mat* leftMap,
+		 Mat* rightMap, Rect& leftValidRoi, Rect& rightValidRoi)
+{
+	time_t tm;
+	time( &tm );
+	struct tm *t2 = localtime(&tm);
+	char buf[1024];
+	strftime( buf, sizeof(buf)-1, "%A_%B_%d_%Y_%X",t2);
+	string filestring = s.outputFileName + ".xml";		
+	FileStorage rs(filestring, FileStorage::WRITE );
+	if(!rs.isOpened())
+	{
+		cout << "File Storage failed to open" << endl;
+	}
+	else
+	{
+		rs 
+			<< "Time" << buf
+			<< "Left_Camera_Parameters" 
+			<< "{"
+				<< "Camera_Type" << LeftCam.cameraType
+				<< "Input" << LeftCam.input
+				<< "Image_Height" << LeftCam.imageSize.height
+				<< "Image_Width" << LeftCam.imageSize.width
+				<< "Camera_Matrix" << LeftCam.cameraMatrix
+				<< "Distortion_Coefficients" << LeftCam.distCoeffs
+		 		<< "Avg_Reproj_Errs" << LeftCam.avgReprojErr
+		 		<< "Rotation_Matrix" << leftR
+		 		<< "Projection_Matrix" << leftP
+		 		<< "Map_1" << leftMap[0]
+		 		<< "Map_2" << leftMap[1]
+		 		<< "Valid_ROI" << leftValidRoi
+		 	<< "}"
+		 	
+			<< "Right_Camera_Parameters" 
+			<< "{"
+				<< "Camera_Type" << RightCam.cameraType
+				<< "Input" << RightCam.input
+				<< "Image_Height" << RightCam.imageSize.height
+				<< "Image_Width" << RightCam.imageSize.width
+				<< "Camera_Matrix" << RightCam.cameraMatrix
+				<< "Distortion_Coefficients" << RightCam.distCoeffs
+		 		<< "Avg_Reproj_Errs" << RightCam.avgReprojErr
+		 		<< "Rotation_Matrix" << rightR
+		 		<< "Projection_Matrix" << rightP
+		 		<< "Map_1" << rightMap[0]
+		 		<< "Map_2" << rightMap[1]
+		 		<< "Valid_ROI" << rightValidRoi	 		
+		 	<< "}"		 	
+		 		
+			<< "Stereovision_Parameters" 
+			<< "{"
+				<< "Rotation_Matrix" << R
+				<< "Translation_Matrix" << T
+				<< "Essential_Matrix" << E
+				<< "Fundamental_Matrix" << F
+				<< "RMS_Error" << rms
+				<< "Disparity_to_Depth_Map" << Q
+			<< "}";
+			rs.release();
+		cout << "File Saved" << endl;
+	}
+
+
 }
