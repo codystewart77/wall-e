@@ -380,6 +380,7 @@ int main(int argc, char* argv[])
 		cout << "Could not open the configuration file: \"" << inputSettingsFile << "\"" << endl;
 		return -1;
 	}
+	cout << "loaded: " << inputSettingsFile << endl;
 	fs["Settings"] >> s;
 	fs.release();
 	
@@ -404,7 +405,7 @@ int main(int argc, char* argv[])
 	const char ESC_KEY = 27;
 	frame = s.nextImage();
 	imageSize = frame.size();
-	namedWindow("Camera View",0);
+	namedWindow("Camera View",CV_WINDOW_AUTOSIZE);
 	int view = NORMAL;
 	
 	while(true)

@@ -28,8 +28,7 @@ class Settings
 {
 public:
 	Settings() : goodInput(false) {}
-	enum Pattern { NOT_EXISTING, CHESSBOARD };
-
+	enum Pattern {NON_EXISTANT, CHECKERBOARD};
     void write(FileStorage& fs) const                        //Write serialization for this class
     {
         fs << "{" << "BoardSize_Width"  << boardSize.width
@@ -199,8 +198,8 @@ static bool runCalibration(double& rms, Settings& s, Camera& LeftCam, Camera& Ri
 		vector<vector<Point2f> > rightImagePoints, Mat& R, Mat& T, Mat& E, Mat& F);
 static void calcBoardCornerPositions(Size boardSize, float squareSize, vector<Point3f>& corners);
 static void saveStereoParams(Settings& s , Camera& LeftCam, Camera& RightCam, Mat& R, Mat& T, Mat& E,
-		Mat& F, double rms, Mat& leftR, Mat& rightR, Mat& leftP, Mat& rightP, Mat& Q, Mat* leftMap,
-		 Mat* rightMap, Rect& leftValidRoi, Rect& rightValidRoi);
+		Mat& F, double rms, Mat& leftR, Mat& rightR, Mat& leftP, Mat& rightP, Mat& Q, Mat& leftMap1, Mat& leftMap2,
+		 Mat& rightMap1, Mat& rightMap2, Rect& leftValidRoi, Rect& rightValidRoi);
 static void read(const FileNode& node, Settings& x, const Settings& default_value = Settings())
 {
     if(node.empty())
@@ -401,7 +400,7 @@ int main(int argc, char* argv[])
 		if(isCalibrated && s.showRectified && key =='d')
 			s.showDisparity = !s.showDisparity;
 			
-		if(showDisparity)
+		if(s.showDisparity)
 		{
 		
 		
@@ -410,7 +409,7 @@ int main(int argc, char* argv[])
 		if(isCalibrated && key == 's')
 		{
 			saveStereoParams( s , LeftCam, RightCam, R, T, E, F, rms, leftR, rightR, leftP, rightP, Q,
-					leftMap, rightMap, leftValidRoi, rightValidRoi);
+					leftMap[0], leftMap[1], rightMap[0], rightMap[1], leftValidRoi, rightValidRoi);
 		}
 	}
 }
@@ -438,8 +437,8 @@ static void calcBoardCornerPositions(Size boardSize, float squareSize, vector<Po
 }
 
 static void saveStereoParams(Settings& s , Camera& LeftCam, Camera& RightCam, Mat& R, Mat& T, Mat& E,
-		Mat& F, double rms, Mat& leftR, Mat& rightR, Mat& leftP, Mat& rightP, Mat& Q, Mat* leftMap,
-		 Mat* rightMap, Rect& leftValidRoi, Rect& rightValidRoi)
+		Mat& F, double rms, Mat& leftR, Mat& rightR, Mat& leftP, Mat& rightP, Mat& Q, Mat& leftMap1, Mat& leftMap2,
+		 Mat& rightMap1, Mat& rightMap2, Rect& leftValidRoi, Rect& rightValidRoi)
 {
 	time_t tm;
 	time( &tm );
@@ -456,6 +455,15 @@ static void saveStereoParams(Settings& s , Camera& LeftCam, Camera& RightCam, Ma
 	{
 		rs 
 			<< "Time" << buf
+			<< "Stereovision_Parameters" 
+			<< "{"
+				<< "Rotation_Matrix" << R
+				<< "Translation_Matrix" << T
+				<< "Essential_Matrix" << E
+				<< "Fundamental_Matrix" << F
+				<< "RMS_Error" << rms
+				<< "Disparity_to_Depth_Map" << Q
+			<< "}"
 			<< "Left_Camera_Parameters" 
 			<< "{"
 				<< "Camera_Type" << LeftCam.cameraType
@@ -467,11 +475,13 @@ static void saveStereoParams(Settings& s , Camera& LeftCam, Camera& RightCam, Ma
 		 		<< "Avg_Reproj_Errs" << LeftCam.avgReprojErr
 		 		<< "Rotation_Matrix" << leftR
 		 		<< "Projection_Matrix" << leftP
-		 		<< "Map_1" << leftMap[0]
-		 		<< "Map_2" << leftMap[1]
-		 		<< "Valid_ROI" << leftValidRoi
+		 		<< "Map_1" << leftMap1
+		 		<< "Map_2" << leftMap2
+		 		<< "ROI_x" << leftValidRoi.x
+				<< "ROI_y" << leftValidRoi.y
+				<< "ROI_height" << leftValidRoi.height
+				<< "ROI_width" << leftValidRoi.width
 		 	<< "}"
-		 	
 			<< "Right_Camera_Parameters" 
 			<< "{"
 				<< "Camera_Type" << RightCam.cameraType
@@ -483,23 +493,18 @@ static void saveStereoParams(Settings& s , Camera& LeftCam, Camera& RightCam, Ma
 		 		<< "Avg_Reproj_Errs" << RightCam.avgReprojErr
 		 		<< "Rotation_Matrix" << rightR
 		 		<< "Projection_Matrix" << rightP
-		 		<< "Map_1" << rightMap[0]
-		 		<< "Map_2" << rightMap[1]
-		 		<< "Valid_ROI" << rightValidRoi	 		
-		 	<< "}"		 	
-		 		
-			<< "Stereovision_Parameters" 
-			<< "{"
-				<< "Rotation_Matrix" << R
-				<< "Translation_Matrix" << T
-				<< "Essential_Matrix" << E
-				<< "Fundamental_Matrix" << F
-				<< "RMS_Error" << rms
-				<< "Disparity_to_Depth_Map" << Q
-			<< "}";
+		 		<< "Map_1" << rightMap1
+		 		<< "Map_2" << rightMap2
+		 		<< "ROI_x" << rightValidRoi.x
+				<< "ROI_y" << rightValidRoi.y
+				<< "ROI_height" << rightValidRoi.height
+				<< "ROI_width" << rightValidRoi.width
+		 	<< "}";		 	
 			rs.release();
 		cout << "File Saved" << endl;
 	}
 
 
 }
+
+

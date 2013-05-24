@@ -50,13 +50,48 @@ CMAKE_SOURCE_DIR = /home/cody/wall-e/src
 CMAKE_BINARY_DIR = /home/cody/wall-e/src
 
 #=============================================================================
+# Target rules for target CMakeFiles/../build/disparity.dir
+
+# All Build rule for target.
+CMakeFiles/../build/disparity.dir/all:
+	$(MAKE) -f CMakeFiles/../build/disparity.dir/build.make CMakeFiles/../build/disparity.dir/depend
+	$(MAKE) -f CMakeFiles/../build/disparity.dir/build.make CMakeFiles/../build/disparity.dir/build
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/cody/wall-e/src/CMakeFiles  1
+	@echo "Built target ../build/disparity"
+.PHONY : CMakeFiles/../build/disparity.dir/all
+
+# Include target in all.
+all: CMakeFiles/../build/disparity.dir/all
+.PHONY : all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/../build/disparity.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/cody/wall-e/src/CMakeFiles 1
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/../build/disparity.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/cody/wall-e/src/CMakeFiles 0
+.PHONY : CMakeFiles/../build/disparity.dir/rule
+
+# Convenience name for target.
+../build/disparity: CMakeFiles/../build/disparity.dir/rule
+.PHONY : ../build/disparity
+
+# clean rule for target.
+CMakeFiles/../build/disparity.dir/clean:
+	$(MAKE) -f CMakeFiles/../build/disparity.dir/build.make CMakeFiles/../build/disparity.dir/clean
+.PHONY : CMakeFiles/../build/disparity.dir/clean
+
+# clean rule for target.
+clean: CMakeFiles/../build/disparity.dir/clean
+.PHONY : clean
+
+#=============================================================================
 # Target rules for target CMakeFiles/../build/intrinsic.dir
 
 # All Build rule for target.
 CMakeFiles/../build/intrinsic.dir/all:
 	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/depend
 	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/cody/wall-e/src/CMakeFiles  1
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/cody/wall-e/src/CMakeFiles  2
 	@echo "Built target ../build/intrinsic"
 .PHONY : CMakeFiles/../build/intrinsic.dir/all
 
@@ -91,7 +126,7 @@ clean: CMakeFiles/../build/intrinsic.dir/clean
 CMakeFiles/../build/stereo.dir/all:
 	$(MAKE) -f CMakeFiles/../build/stereo.dir/build.make CMakeFiles/../build/stereo.dir/depend
 	$(MAKE) -f CMakeFiles/../build/stereo.dir/build.make CMakeFiles/../build/stereo.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/cody/wall-e/src/CMakeFiles  2
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/cody/wall-e/src/CMakeFiles  3
 	@echo "Built target ../build/stereo"
 .PHONY : CMakeFiles/../build/stereo.dir/all
 

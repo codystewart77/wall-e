@@ -1,2 +1,3 @@
+/home/cody/wall-e/src/CMakeFiles/../build/disparity.dir
 /home/cody/wall-e/src/CMakeFiles/../build/intrinsic.dir
 /home/cody/wall-e/src/CMakeFiles/../build/stereo.dir

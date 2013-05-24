@@ -16,7 +16,7 @@
 		<EPS_Criteria>1e-6</EPS_Criteria>
 		
 		<!-- The output filename to save the calibration-->
-		<Output_FileName>"thisfile"</Output_FileName>
+		<Output_FileName>"../savefiles/stereo_calib"</Output_FileName>
 		
 		<!-- The calibration files fdr the two cameras -->
 		<Left_Parameters>"../savefiles/AXIS151.xml"</Left_Parameters>

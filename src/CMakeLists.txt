@@ -11,9 +11,11 @@ FIND_PACKAGE( OpenCV REQUIRED )
 
 # arg_0 is the excutable name
 # arg_x are the .cpp files
- ADD_EXECUTABLE( ../build/intrinsic find_intrinsic.cpp )
+ADD_EXECUTABLE( ../build/intrinsic find_intrinsic.cpp )
 ADD_EXECUTABLE( ../build/stereo calibrate_stereo.cpp )
+ADD_EXECUTABLE( ../build/disparity stereo_disparity.cpp )
 
 # link needed libraries, should not have to change
- TARGET_LINK_LIBRARIES( ../build/intrinsic ${OpenCV_LIBS} )
+TARGET_LINK_LIBRARIES( ../build/intrinsic ${OpenCV_LIBS} )
 TARGET_LINK_LIBRARIES( ../build/stereo ${OpenCV_LIBS} )
+TARGET_LINK_LIBRARIES( ../build/disparity ${OpenCV_LIBS} )

@@ -96,6 +96,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named ../build/disparity
+
+# Build rule for target.
+../build/disparity: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 ../build/disparity
+.PHONY : ../build/disparity
+
+# fast build rule for target.
+../build/disparity/fast:
+	$(MAKE) -f CMakeFiles/../build/disparity.dir/build.make CMakeFiles/../build/disparity.dir/build
+.PHONY : ../build/disparity/fast
+
+#=============================================================================
 # Target rules for targets named ../build/intrinsic
 
 # Build rule for target.
@@ -169,12 +182,37 @@ find_intrinsic.cpp.s:
 	$(MAKE) -f CMakeFiles/../build/intrinsic.dir/build.make CMakeFiles/../build/intrinsic.dir/find_intrinsic.cpp.s
 .PHONY : find_intrinsic.cpp.s
 
+stereo_disparity.o: stereo_disparity.cpp.o
+.PHONY : stereo_disparity.o
+
+# target to build an object file
+stereo_disparity.cpp.o:
+	$(MAKE) -f CMakeFiles/../build/disparity.dir/build.make CMakeFiles/../build/disparity.dir/stereo_disparity.cpp.o
+.PHONY : stereo_disparity.cpp.o
+
+stereo_disparity.i: stereo_disparity.cpp.i
+.PHONY : stereo_disparity.i
+
+# target to preprocess a source file
+stereo_disparity.cpp.i:
+	$(MAKE) -f CMakeFiles/../build/disparity.dir/build.make CMakeFiles/../build/disparity.dir/stereo_disparity.cpp.i
+.PHONY : stereo_disparity.cpp.i
+
+stereo_disparity.s: stereo_disparity.cpp.s
+.PHONY : stereo_disparity.s
+
+# target to generate assembly for a file
+stereo_disparity.cpp.s:
+	$(MAKE) -f CMakeFiles/../build/disparity.dir/build.make CMakeFiles/../build/disparity.dir/stereo_disparity.cpp.s
+.PHONY : stereo_disparity.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
 	@echo "... all (the default if no target is provided)"
 	@echo "... clean"
 	@echo "... depend"
+	@echo "... ../build/disparity"
 	@echo "... ../build/intrinsic"
 	@echo "... ../build/stereo"
 	@echo "... edit_cache"
@@ -185,6 +223,9 @@ help:
 	@echo "... find_intrinsic.o"
 	@echo "... find_intrinsic.i"
 	@echo "... find_intrinsic.s"
+	@echo "... stereo_disparity.o"
+	@echo "... stereo_disparity.i"
+	@echo "... stereo_disparity.s"
 .PHONY : help
 
 
