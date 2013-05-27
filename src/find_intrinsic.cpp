@@ -284,7 +284,12 @@ static void saveCameraParams( Settings& s, Size& imageSize, Mat& cameraMatrix, M
     strftime( buf, sizeof(buf)-1, "%A_%B_%d_%Y_%X", t2 );
     string filestring = s.outputFileName + ".xml";
     FileStorage fs(filestring, FileStorage::WRITE );
-	fs << "input" << s.input;
+	if(!fs.isOpened())
+	{
+		cout << "failed to open file" << endl;
+		return;
+	}
+    fs << "input" << s.input;
     fs << "calibration_Time" << buf;
 
     if( !rvecs.empty() || !reprojErrs.empty() )

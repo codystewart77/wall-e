@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<opencv_storage>
+	<Settings>
+		
+		<!--Stereo algorithm to use, either bm, sgbm, hh or var -->
+		<Algorithm>"var"</Algorithm>
+
+		<!--Blocksize, must be and odd number -->
+		<Blocksize>11</Blocksize>
+		
+		<!--Scale-->
+		<Scale>0.1</Scale>
+
+		<!--ShowDisplay -->
+		<ShowDisplay>true</ShowDisplay>
+
+		<!--Pointcloud filename, extension will be added-->
+		<Pointcloud_Filename>"points"</Pointcloud_Filename>
+	</Settings>
+</opencv_storage>
+
