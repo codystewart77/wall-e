@@ -4,7 +4,7 @@
 ** Author: Cody Stewart
 ** May 23, 2013
 */
-
+#define STEREOBM
 
 #include <iostream>
 #include <sstream>
@@ -21,6 +21,7 @@
 using namespace cv;
 using namespace std;
 
+int cn = 1;
 class Settings
 {
 	public:
@@ -221,6 +222,177 @@ static void help()
 			<< endl;
 }
 
+void cvtDepth2Cloud(const Mat& depth, Mat& cloud, const Mat& cameraMatrix)
+{
+	const float inv_fx = 1.f/cameraMatrix.at<float>(0,0);
+	const float inv_fy = 1.f/cameraMatrix.at<float>(1,1);
+	const float ox = cameraMatrix.at<float>(0,2);
+	const float oy = cameraMatrix.at<float>(1,2);
+	cloud.create( depth.size(), CV_32FC3);
+	for(int y = 0; y< cloud.rows; y++)
+	{
+		Point3f* cloud_ptr = (Point3f*)cloud.ptr(y);
+		const float* depth_ptr = (const float*) depth.ptr(y);
+		for(int x = 0; x < cloud.cols; x++)
+		{
+			float z = depth_ptr[x];
+			cloud_ptr[x].x = (x - ox) * z * inv_fx;
+			cloud_ptr[x].y = (y - oy) * z * inv_fy;
+			cloud_ptr[x].z = z;
+		}
+	}
+}
+
+static void saveXYZ( const char* filename, const Mat& mat)
+{
+	const double max_z = 1.0e5;
+	FILE* fp = fopen(filename, "wt");
+	for(int y = 0; y < mat.rows; y++)
+	{
+		for(int x = 0; x < mat.cols; x++)
+		{
+			Vec3f point = mat.at<Vec3f>(y,x);
+			if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
+			fprintf(fp, "%f %f %f\n",point[0], point[1], point[2]);
+		}
+	}
+	fclose(fp);
+}
+
+
+//Trackbar Settings functions
+
+#ifdef STEREOBM
+//StereoBM Correspondances
+
+void setMinDisp(int val, void* ptr)
+{	
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	if(bm->state->minDisparity >= 0)
+		bm->state->minDisparity = val;
+	else
+		bm->state->minDisparity = -val;
+}
+
+void flipMinDisp(int val, void* ptr)
+{
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	bm->state->minDisparity = -bm->state->minDisparity;
+}
+
+void setNumDisp( int val, void* ptr )
+{
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	bm->state->numberOfDisparities = (val + 1) * 16  ;
+}
+
+void setPreFilterCap( int val , void* ptr )
+{
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	bm->state->preFilterCap = val + 1;
+}
+
+void setSAD( int val, void* ptr )
+{
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	if(val < 5)
+		val = 5;
+	if(val > 255)
+		val = 255;
+
+	if(val % 2 != 1)
+		bm->state->SADWindowSize = val + 1;
+	else
+		bm->state->SADWindowSize = val;
+	
+}
+void setTextureThresh( int val, void* ptr )
+{
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	bm->state->textureThreshold = val;
+}
+void setUniqueness( int val, void* ptr )
+
+{
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	bm->state->uniquenessRatio = val;
+}
+
+void setSpeckleWindowSize(int val, void* ptr)
+{
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	bm->state->speckleWindowSize = val;
+}
+
+void setSpeckleRange(int val, void* ptr)
+{
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	bm->state->speckleRange = val;
+}
+
+void setMaxDiff(int val, void* ptr)
+{
+	StereoBM *bm= static_cast<StereoBM*>(ptr);
+	bm->state->disp12MaxDiff = static_cast<float>(val/100.);
+}
+#endif
+
+#ifdef STEREOVAR
+//StereoVar trackbar functions
+void setMinDisp(int val ,void* ptr)
+{
+	StereoVar *bm = static_cast<StereoVar*>(ptr);
+	bm->minDisp = - val*16;
+}
+
+void setLevels(int val ,void* ptr)
+{
+	StereoVar *bm = static_cast<StereoVar*>(ptr);
+	bm->levels = val;
+}
+
+void setPyrScale(int val ,void* ptr)
+{
+	StereoVar *bm = static_cast<StereoVar*>(ptr);
+	bm->pyrScale = val/10.0f;
+}
+
+
+void setNIts(int val ,void* ptr)
+{
+	StereoVar *bm = static_cast<StereoVar*>(ptr);
+	bm->nIt = val;
+}
+
+void setPoly_n(int val ,void* ptr)
+{
+	StereoVar *bm = static_cast<StereoVar*>(ptr);
+	if(val <= 3)
+		bm->poly_n = 3;
+	else if (val > 3 && val <= 5)
+		bm->poly_n = 5;
+	else
+		bm->poly_n = 7;
+}
+
+void setPoly_sigma(int val ,void* ptr)
+{
+	StereoVar *bm = static_cast<StereoVar*>(ptr);
+	bm->minDisp = val/100.0f;
+}
+
+void setFi(int val ,void* ptr)
+{
+	StereoVar *bm = static_cast<StereoVar*>(ptr);
+	bm->fi = val/10.0f;
+}
+
+void setLambda(int val ,void* ptr)
+{
+	StereoVar *bm = static_cast<StereoVar*>(ptr);
+	bm->lambda = val/100.0f;;
+}
+#endif
 
 
 
@@ -288,26 +460,96 @@ int main(int argc, char* argv[])
 	Mat leftView, rightView;
 	Mat leftView8, rightView8; //rectified images
 	Mat disp, disp8;
-	int numDisps = (LeftCam.imageSize.width/8) + 15 & -16;
+	//int numDisps = (LeftCam.imageSize.width/8) + 15 & -16;
 	namedWindow("Left",CV_WINDOW_AUTOSIZE);
-	namedWindow("Right",CV_WINDOW_AUTOSIZE);
+//	namedWindow("Right",CV_WINDOW_AUTOSIZE);
 	namedWindow("Disparity",CV_WINDOW_AUTOSIZE);
-	int minDisp = 0;
-	int numberOfDisparities =  256;
+	int trackMinDisp = 0;
+	int trackFlipMinDisp = 0;
+	int trackNumberOfDisparities = 10;
+	int trackPreFilterCap = 6;
+	int trackSADWindowSize = 9;
+	int trackTextureThreshold = 10;
+	int trackUniquenessRatio = 15;
+	int trackSpeckleWindowSize = 100;
+	int trackSpeckleRange = 31;
+	int trackDisp12MaxDiff = 100;
+	//Mat quickView;
+	//LeftCam.grab();
+	//quickView = LeftCam.retrieve();
+	//int cn = quickView.channels();
+
+#ifdef STEREOBM
+	//Initialization if alg = StereoBM
+	
 	StereoBM bm;
 	bm.state->roi1 = LeftCam.roi;
 	bm.state->roi2 = RightCam.roi;
-	bm.state->preFilterCap = 31;
-	bm.state->SADWindowSize = 9;
-	bm.state->minDisparity = minDisp;
-	bm.state->numberOfDisparities = numberOfDisparities;
-	bm.state->textureThreshold = 10;
-	bm.state->uniquenessRatio = 15;
-	bm.state->speckleWindowSize = 100;
-	bm.state->speckleRange = 32;
-	bm.state->disp12MaxDiff = 1;
+	bm.state->preFilterCap = trackPreFilterCap;
+	bm.state->SADWindowSize = trackSADWindowSize;
+	bm.state->minDisparity = trackMinDisp;
+	bm.state->numberOfDisparities = trackNumberOfDisparities*16;
+	bm.state->textureThreshold = trackTextureThreshold;
+	bm.state->uniquenessRatio = trackUniquenessRatio;
+	bm.state->speckleWindowSize = trackSpeckleWindowSize;
+	bm.state->speckleRange = trackSpeckleRange;
+	bm.state->disp12MaxDiff = trackDisp12MaxDiff/100.;
+#endif
+
+#ifdef STEREOVAR
+	int levels = 3;
+	int pyrScale = 50;
+	int nIt = 25;
+	int poly_n = 3;
+	int poly_sigma = 0;
+	int fi = 150;
+	int lambda = 30;
+	//Initialization if alg = StereoVar
+	StereoVar bm;
+	bm.levels = 3;
+	bm.pyrScale = 0.5;
+	bm.nIt = 25;
+	bm.minDisp = -trackNumberOfDisparities*16;
+	bm.maxDisp = 0;
+	bm.poly_n = 3;
+	bm.poly_sigma = 0.0;
+	bm.fi = 15.0f;
+	bm.lambda = 0.03f;
+	bm.penalization = bm.PENALIZATION_TICHONOV;
+	bm.cycle = bm.CYCLE_V;
+	bm.flags = bm.USE_SMART_ID | bm.USE_AUTO_PARAMS | bm.USE_INITIAL_DISPARITY | bm.USE_MEDIAN_FILTERING;
+#endif
+	
 
 
+	namedWindow("trackbars", CV_WINDOW_AUTOSIZE);
+	
+	//StereoBM trackbars
+#ifdef STEREOBM	
+	createTrackbar("minDisp", "trackbars", &trackMinDisp, 16, setMinDisp, &bm);
+	createTrackbar("flipminDisp","trackbars", &trackFlipMinDisp, 1, flipMinDisp, &bm);
+	createTrackbar("numDisp","trackbars", &trackNumberOfDisparities , 100 , setNumDisp, &bm);
+	createTrackbar("preFilterCap","trackbars", &trackPreFilterCap , 62, setPreFilterCap, &bm);
+	createTrackbar("SADWindowSize","trackbars", &trackSADWindowSize , 255, setSAD, &bm);
+	createTrackbar("TextureThresh","trackbars", &trackTextureThreshold , 10, setTextureThresh, &bm);
+	createTrackbar("UniquenessRatio","trackbars", &trackUniquenessRatio , 100, setUniqueness, &bm);
+	createTrackbar("SpeckleWindowSize","trackbars", &trackSpeckleWindowSize , 200, setSpeckleWindowSize, &bm);
+	createTrackbar("SpeckleRange","trackbars", &trackSpeckleRange , 100, setSpeckleRange, &bm);
+	createTrackbar("MaxDiff","trackbars", &trackDisp12MaxDiff , 2000, setMaxDiff, &bm);
+#endif
+
+	//StereoVar trackbars
+#ifdef STEREOVAR
+	createTrackbar("minDisp", "trackbars", &trackNumberOfDisparities, 16, setMinDisp, &bm);
+	createTrackbar("levels", "trackbars", &levels, 5, setLevels, &bm );	
+	createTrackbar("pyrScale", "trackbars", &pyrScale, 100, setPyrScale, &bm );	
+	createTrackbar("nIts", "trackbars", &nIt, 50, setNIts, &bm );	
+	createTrackbar("poly_n", "trackbars", &poly_n, 7, setPoly_n, &bm );	
+	createTrackbar("poly_sigma", "trackbars", &poly_sigma, 2200, setPoly_sigma, &bm );	
+	createTrackbar("fi", "trackbars", &fi, 200, setFi, &bm );	
+	createTrackbar("lambda", "trackbars", &lambda, 100, setLambda, &bm );	
+#endif
+	Mat depthImg;
 	
 	while(true)
 	{
@@ -315,35 +557,40 @@ int main(int argc, char* argv[])
 		RightCam.grab();
 		remap(LeftCam.retrieve(), leftView, LeftCam.map1, LeftCam.map2, INTER_LINEAR);
 		remap(RightCam.retrieve(), rightView, RightCam.map1, RightCam.map2, INTER_LINEAR);
+		//waitKey(10000);
+#ifdef STEREOBM
 		cvtColor(leftView, leftView8, CV_RGB2GRAY);
 		cvtColor(rightView,rightView8, CV_RGB2GRAY);
-		//cout << "GOT HERE" << endl;
-		//if(s.alg == STEREO_BM)
-		//imshow("Left", leftView8);
-		//imshow("Right", leftView);
-		//waitKey(10000);
 		bm(leftView8, rightView8, disp);
-		//cout << "BUT NOT HERE" << endl;
-		/*else if(s.alg == STEREO_VAR )
-			var(leftView, rightView, disp);
-		else
-			sgbm(leftView, rightView, disp);
-		*/
-		//if( alg != STEREO_VAR)
-		disp.convertTo(disp8, CV_8U, 255/(numberOfDisparities*16.));
+#endif
+#ifdef STEREOVAR
+		bm(leftView, rightView, disp);
+#endif
+		
+		//normalize(disp,disp8,0,255, CV_8U);
+		//disp.convertTo(disp8, CV_8U, 255/(trackNumberOfDisparities*16.));
 		//else
-		//	disp.convertTo(disp8, CV_8U);
+		disp.convertTo(disp8, CV_8U);
 
 		imshow("Left", leftView);
-		imshow("Right", rightView);
+		//imshow("Right", rightView);
 		imshow("Disparity", disp8);
-
+		//imshow("Depth",depthImg);
 		char k = (char)waitKey(10);
 		if(k == ESC_KEY)
 			break;
 
 	
 	}
+/*	
+	disp.convertTo(disp8, CV_8U, 255/(trackNumberOfDisparities*16*16.));
+	reprojectImageTo3D(disp, depthImg, data.d2dMap);
+	saveXYZ("../savefiles/disp1.pcl",depthImg);
+
+	
+	reprojectImageTo3D(disp8, depthImg, data.d2dMap);
+	saveXYZ("../savefiles/disp8.pcl",depthImg);
+*/	
 	return 0;
 }
 
