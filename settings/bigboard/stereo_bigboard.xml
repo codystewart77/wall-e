@@ -7,10 +7,10 @@
 		<BoardSize_Height>6</BoardSize_Height>
 		
 		<!-- The size of a square in some user defined metric system (pixel, millimeter)-->
-		<Square_Size>15</Square_Size>
+		<Square_Size>150</Square_Size>
 		
 		<!-- The maximum iterations for the stereo calibration-->
-		<Iteration_Criteria>30</Iteration_Criteria>
+		<Iteration_Criteria>90</Iteration_Criteria>
 		
 		<!-- The eps convergence-->
 		<EPS_Criteria>1e-9</EPS_Criteria>

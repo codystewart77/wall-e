@@ -15,6 +15,7 @@
 #include <sstream>
 #include <time.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -308,15 +309,15 @@ int main(int argc, char* argv[])
 	//named windows: left, right and disparity
 	namedWindow("Left",CV_WINDOW_AUTOSIZE);
 	namedWindow("Right",CV_WINDOW_AUTOSIZE);
-	namedWindow("Disparity",CV_WINDOW_AUTOSIZE);
 	namedWindow("Rectified",CV_WINDOW_AUTOSIZE);
-	
+	moveWindow("Left",10,20);
+	moveWindow("Right",490,20);
 	while(true)
 	{
 		LeftCam.grab();
 		RightCam.grab();
-		leftView = LeftCam.retrieve();
-		rightView = RightCam.retrieve();
+		leftView = LeftCam.retrieve().clone();
+		rightView = RightCam.retrieve().clone();
 
 		vector<Point2f> leftPointBuff, rightPointBuff;
 
@@ -325,27 +326,43 @@ int main(int argc, char* argv[])
 		if(key == 'g') //grab the frames
 		{
 			bool leftFound, rightFound;
+		 	try{	
+				leftFound = findChessboardCorners(leftView, s.boardSize, leftPointBuff);
+				rightFound = findChessboardCorners(rightView, s.boardSize, rightPointBuff);
+			}
+			catch(cv::Exception)
+			{
+				leftFound = false;
+				rightFound = false;
+			}
 			
-			leftFound = findChessboardCorners(leftView, s.boardSize, leftPointBuff,
-					CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
-			rightFound = findChessboardCorners(rightView, s.boardSize, rightPointBuff,
-					CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
-
 			if(leftFound && rightFound)
-			{	
+			{
+				cout << "found corners" << endl;
 				Mat leftViewGray, rightViewGray;
 				cvtColor(leftView, leftViewGray, CV_BGR2GRAY);
 				cvtColor(rightView, rightViewGray, CV_BGR2GRAY);
+				//leftViewGray = leftView.clone();
+				//rightViewGray = rightViewGray.clone();
 
 				cornerSubPix( leftViewGray, leftPointBuff, Size(11,11), Size(-1,-1), 
 						TermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 30, 0.1));
 				cornerSubPix( rightViewGray, rightPointBuff, Size(11,11), Size(-1,-1),
 						TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 30, 0.1));
-
-				leftImagePoints.push_back(leftPointBuff);
-				rightImagePoints.push_back(rightPointBuff);
+				drawChessboardCorners(leftView, s.boardSize, Mat(leftPointBuff), leftFound);
+				drawChessboardCorners(rightView,s.boardSize, Mat(rightPointBuff), rightFound);
+				imshow("Left",leftView);
+				imshow("Right",rightView);
+				char tempkey = (char)waitKey(5000);
+				if(tempkey == 'n')
+					continue;
+				else if(tempkey == 'a')
+				{
+					leftImagePoints.push_back(leftPointBuff);
+					rightImagePoints.push_back(rightPointBuff);
 				
-				cout << "Frames: " << leftImagePoints.size() << endl;
+					cout << "Frames: " << leftImagePoints.size() << endl;
+				}
 			}
 		}
 		
@@ -354,7 +371,7 @@ int main(int argc, char* argv[])
 			return 0;
 		}
 		
-		if( key == 'c' && leftImagePoints.size() > 5)
+		if( key == 'c')// && leftImagePoints.size() > 5)
 		{
 			//run calibration
 			bool ok = runCalibration(rms ,s, LeftCam, RightCam, leftImagePoints, rightImagePoints, R, T, E, F);
@@ -365,7 +382,7 @@ int main(int argc, char* argv[])
 					1, LeftCam.imageSize, &leftValidRoi, &rightValidRoi);
 				initUndistortRectifyMap(LeftCam.cameraMatrix, LeftCam.distCoeffs, leftR, leftP, LeftCam.imageSize,
 						CV_16SC2, leftMap[0], leftMap[1]);
-				initUndistortRectifyMap(RightCam.cameraMatrix, RightCam.distCoeffs, rightR, rightP, RightCam.imageSize,
+				initUndistortRectifyMap(RightCam.cameraMatrix, RightCam.distCoeffs, rightR, leftP, RightCam.imageSize,
 						CV_16SC2, rightMap[0], rightMap[1]);						
 				cout << "Calibration succeeded" << endl;
 				isCalibrated = true;
@@ -389,28 +406,32 @@ int main(int argc, char* argv[])
 			Mat canvasPartR = canvas(Rect(w,0,w,h));
 			resize(LImg, canvasPartL, canvasPartL.size(),0,0,CV_INTER_AREA);
 			resize(RImg, canvasPartR, canvasPartR.size(),0,0,CV_INTER_AREA);
+			for(int i = canvas.rows/10; i < canvas.rows; i += canvas.rows/10)
+			{
+				line(canvas, Point(0,i), Point(canvas.cols,i), CV_RGB(255,255,0));
+			}
+			rectangle(canvas, leftValidRoi, CV_RGB(255,0,0));
+			rectangle(canvas, rightValidRoi, CV_RGB(0,0,255));
 			imshow("Rectified", canvas);
 		}
-		else
+
+		imshow("Left", leftView);
+		imshow("Right", rightView);
+		
+		if(key == 'r')
 		{
-			imshow("Left", leftView);
-			imshow("Right", rightView);
+			isCalibrated = false;
+			s.showRectified = false;
+			leftImagePoints.clear();
+			rightImagePoints.clear();
+			cout << "calibration reset" << endl;
 		}
-		
-		if(isCalibrated && s.showRectified && key =='d')
-			s.showDisparity = !s.showDisparity;
-			
-		if(s.showDisparity)
-		{
-		
-		
-		}
-		
 		if(isCalibrated && key == 's')
 		{
 			saveStereoParams( s , LeftCam, RightCam, R, T, E, F, rms, leftR, rightR, leftP, rightP, Q,
 					leftMap[0], leftMap[1], rightMap[0], rightMap[1], leftValidRoi, rightValidRoi);
 		}
+		usleep(30);
 	}
 }
 
@@ -501,7 +522,7 @@ static void saveStereoParams(Settings& s , Camera& LeftCam, Camera& RightCam, Ma
 				<< "ROI_width" << rightValidRoi.width
 		 	<< "}";		 	
 			rs.release();
-		cout << "File Saved" << endl;
+		cout << "Saved to :\"" << filestring << "\"" << endl;
 	}
 
 

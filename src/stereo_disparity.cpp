@@ -11,6 +11,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <string>
+#include <fstream>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -222,41 +223,36 @@ static void help()
 			<< endl;
 }
 
-void cvtDepth2Cloud(const Mat& depth, Mat& cloud, const Mat& cameraMatrix)
-{
-	const float inv_fx = 1.f/cameraMatrix.at<float>(0,0);
-	const float inv_fy = 1.f/cameraMatrix.at<float>(1,1);
-	const float ox = cameraMatrix.at<float>(0,2);
-	const float oy = cameraMatrix.at<float>(1,2);
-	cloud.create( depth.size(), CV_32FC3);
-	for(int y = 0; y< cloud.rows; y++)
-	{
-		Point3f* cloud_ptr = (Point3f*)cloud.ptr(y);
-		const float* depth_ptr = (const float*) depth.ptr(y);
-		for(int x = 0; x < cloud.cols; x++)
-		{
-			float z = depth_ptr[x];
-			cloud_ptr[x].x = (x - ox) * z * inv_fx;
-			cloud_ptr[x].y = (y - oy) * z * inv_fy;
-			cloud_ptr[x].z = z;
-		}
-	}
-}
-
 static void saveXYZ( const char* filename, const Mat& mat)
 {
-	const double max_z = 1.0e5;
-	FILE* fp = fopen(filename, "wt");
+	const double max_z = 1.0e4;
+	ofstream fp(filename, std::ofstream::out);
+	
+	if(!fp.is_open())
+	{
+		cout << "Failed to open file" << endl;
+		return;
+	}
+	fp 	<< "VERSION  " << 1.0 << "\n"
+		<< "FIELDS x y z \n"
+		<< "SIZE 4 4 4 \n" 
+		<< "TYPE F F F \n" 
+		<< "COUNT 1 1 1 \n" 
+		<< "WIDTH " << mat.cols << "\n"
+		<< "HEIGHT " << mat.rows << "\n"
+		<< "VIEWPOINT 0 0 0 1 0 0 0 \n" 
+		<< "POINTS " << ( mat.cols * mat.rows) << "\n"
+		<< "DATA ascii \n";
 	for(int y = 0; y < mat.rows; y++)
 	{
 		for(int x = 0; x < mat.cols; x++)
 		{
 			Vec3f point = mat.at<Vec3f>(y,x);
 			if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
-			fprintf(fp, "%f %f %f\n",point[0], point[1], point[2]);
+			fp << point[0] << " " << point[1] << " " << point[2] << "\n";;
 		}
 	}
-	fclose(fp);
+	fp.close();
 }
 
 
@@ -348,7 +344,7 @@ void VarSetMinDisp(int val ,void* ptr)
 void VarSetMaxDisp(int val, void* ptr)
 {
 	StereoVar *bm = static_cast<StereoVar*>(ptr);
-	bm->maxDisp = val;
+	bm->maxDisp = -val;
 }
 
 void VarSetLevels(int val ,void* ptr)
@@ -430,7 +426,7 @@ void SGBMSetSADWindowSize(int val, void* ptr)
 void SGBMSetMinDisparity(int val, void* ptr)
 {
 	StereoSGBM *bm = static_cast<StereoSGBM*>(ptr);
-	bm->minDisparity = val;
+	bm->minDisparity = -val;
 }
 
 void SGBMSetNumberOfDisparities(int val, void* ptr)
@@ -546,25 +542,25 @@ int main(int argc, char* argv[])
 	int BMTrackSpeckleRange = 3;
 	int BMTrackDisp12MaxDiff = 100;
 	
-	int SGBMPreFilterCap = 20;
-	int SGBMSADWindowSize = 9;
+	int SGBMPreFilterCap = 0;
+	int SGBMSADWindowSize = 0;
 	int SGBMP1 = 8*3*SGBMSADWindowSize*SGBMSADWindowSize;
 	int SGBMP2 = 32*3*SGBMSADWindowSize*SGBMSADWindowSize;
 	int SGBMMinDisparity = 0;
-	int SGBMNumberOfDisparities = 10;
-	int SGBMUniquenessRatio = 10;
+	int SGBMNumberOfDisparities = 5;
+	int SGBMUniquenessRatio = 0;
 	int SGBMSpeckleWindowSize = 150;
-	int SGBMSpeckleRange = 16;
-	int SGBMMaxDiff = 100;
+	int SGBMSpeckleRange = 2;
+	int SGBMMaxDiff = 10;
 
-	int VarLevels = 3;
-	int VarPyrScale = 50;
-	int VarnIt = 25;
+	int VarLevels = 1;
+	int VarPyrScale = 17;
+	int VarnIt = 12;
 	int VarPoly_n = 3;
 	int VarPoly_sigma = 0;
-	int VarFi = 150;
-	int VarLambda = 30;
-	int VarNumberOfDisparities = 4;	
+	int VarFi = 80;
+	int VarLambda = 20;
+	int VarNumberOfDisparities = 0;	
 	StereoBM bm;
 	StereoVar var;
 	StereoSGBM sgbm;
@@ -618,12 +614,13 @@ int main(int argc, char* argv[])
 		createTrackbar("SpeckleRange","trackbars", &SGBMSpeckleRange , 20, SGBMSetSpeckleRange , &sgbm);
 		createTrackbar("MaxDiff","trackbars", &SGBMMaxDiff , 100, SGBMSetMaxDiff , &sgbm);
 
+		
 	}
 	else if(s.alg == Settings::STEREO_VAR)
 	{
 		//Initialization if alg = StereoVar
 		var.levels = VarLevels;
-		var.pyrScale = VarPyrScale/10.f;
+		var.pyrScale = VarPyrScale/10.0f;
 		var.nIt = VarnIt;
 		var.minDisp = -VarNumberOfDisparities;
 		var.maxDisp = 0;
@@ -634,8 +631,8 @@ int main(int argc, char* argv[])
 		var.penalization = var.PENALIZATION_TICHONOV;
 		var.cycle = var.CYCLE_V;
 	
-		createTrackbar("minDisp", "trackbars", &VarNumberOfDisparities, 16, VarSetMinDisp, &var);
-		createTrackbar("levels", "trackbars", &VarLevels, 5, VarSetLevels, &var );	
+		createTrackbar("minDisp", "trackbars", &VarNumberOfDisparities,32 , VarSetMinDisp, &var);
+		createTrackbar("levels", "trackbars", &VarLevels, 4, VarSetLevels, &var );	
 		createTrackbar("pyrScale", "trackbars", &VarPyrScale, 100, VarSetPyrScale, &var );	
 		createTrackbar("nIts", "trackbars", &VarnIt, 50, VarSetNIts, &var );	
 		createTrackbar("poly_n", "trackbars", &VarPoly_n, 7, VarSetPoly_n, &var );	
@@ -645,7 +642,7 @@ int main(int argc, char* argv[])
 	}
 	
 	Mat depthImg;
-	
+	Mat cloud;
 	while(true)
 	{
 		LeftCam.grab();
@@ -662,11 +659,11 @@ int main(int argc, char* argv[])
 		}
 		else if(s.alg == Settings::STEREO_SGBM)
 		{
-			sgbm(leftView, rightView, disp);
+			sgbm(leftView, rightView, disp8);
+			disp8.convertTo(disp, CV_8U);
 		}
 		else if(s.alg == Settings::STEREO_VAR)
 			var(leftView, rightView, disp);
-		
 
 		
 		imshow("Left", leftView);
@@ -675,7 +672,12 @@ int main(int argc, char* argv[])
 		char k = (char)waitKey(30);
 		if(k == ESC_KEY)
 			break;
-
+		
+		if(k == 's')
+		{
+			reprojectImageTo3D(disp8, cloud, data.d2dMap, true);
+			saveXYZ("pointcloud2.pcd",cloud);
+		}
 	
 	}
 /*	

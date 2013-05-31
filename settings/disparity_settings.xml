@@ -2,7 +2,7 @@
 <opencv_storage>
 	<Settings>
 		
-		<!--Stereo algorithm to use, either bm, sgbm, hh or var -->
+		<!--Stereo algorithm to use, either bm,sgbm  or var -->
 		<Algorithm>"var"</Algorithm>
 
 		<!--Blocksize, must be and odd number -->

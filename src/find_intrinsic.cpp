@@ -257,7 +257,7 @@ static bool runCalibration( Settings& s, Size& imageSize, Mat& cameraMatrix, Mat
 
     //Find intrinsic and extrinsic camera parameters
     double rms = calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix,
-                                 distCoeffs, rvecs, tvecs, s.flag|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5);
+                                 distCoeffs, rvecs, tvecs);
 
     cout << "Re-projection error reported by calibrateCamera: "<< rms << endl;
 
@@ -353,7 +353,8 @@ static void saveCameraParams( Settings& s, Size& imageSize, Mat& cameraMatrix, M
         }
         fs << "Image_points" << imagePtMat;
     }
-	cout << "Camera Parameters saved :)" << endl;
+    fs.release();
+	cout << "Camera Parameters saved to: \"" << filestring  << "\""  << endl;
 }
 
 bool runCalibrationAndSave(Settings& s, Size imageSize, Mat&  cameraMatrix, Mat& distCoeffs,vector<vector<Point2f> > imagePoints )
@@ -378,7 +379,14 @@ int main(int argc, char* argv[])
 	help();
 	Mat frame;
 	Settings s;
-	const string inputSettingsFile = argc > 1 ? argv[1] : "default2.xml";
+	string inputSettingsFile;
+	if(argc > 1 )
+		inputSettingsFile = argv[1];
+	else
+	{
+		cout << "Please specify the input settings file" << endl;
+		cin >> inputSettingsFile;
+	}
 	FileStorage fs(inputSettingsFile, FileStorage::READ);
 	if(!fs.isOpened())
 	{
@@ -394,7 +402,14 @@ int main(int argc, char* argv[])
 		cout << " Invalid input detected " << endl;
 		return -1;
 	}
-	
+	if(s.outputFileName == "")
+	{
+		string fileOut;
+		cout << "Please specify the file you would like to save the calibration to.\n" <<
+			"The .xml extension will automatically be added" << endl;	
+		cin >> fileOut;
+		s.outputFileName = fileOut;
+	}
 	//VideoCapture cap("http://192.168.0.152/axis-cgi/mjpg/video.cgi?.mjpg");
 	//if(!cap.isOpened())
 	//	return 0;
@@ -418,24 +433,44 @@ int main(int argc, char* argv[])
 		frame = s.nextImage();
 		vector<Point2f> pointBuff;
 		
-		char key = (char)waitKey(20);
+		char key = (char)waitKey(40);
 		
 		if(key == 'g') //capture the frame
 		{
 			//check for chessboard
 			bool found;
-			found = findChessboardCorners(frame, s.boardSize, pointBuff,
-				CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
+			//cout << "looking" << endl;
+			try
+			{
+				found = findChessboardCorners(frame, s.boardSize, pointBuff,0);
+			}
+			catch(cv::Exception)
+			{
+				found = false;
+			}
+			//cout << "found" << endl;
 			//if found, add frame to calibration
 			if(found)
 			{
+				
 				Mat viewGray;
 				cvtColor(frame, viewGray, CV_BGR2GRAY);
-                cornerSubPix( viewGray, pointBuff, Size(11,11),
-                    Size(-1,-1), TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));	
-                imagePoints.push_back(pointBuff);
-                cout << "Frames: " << imagePoints.size() << endl;
-            }
+                		//cout << "sub pix" << endl;
+				cornerSubPix( viewGray, pointBuff, Size(11,11),
+                    			Size(-1,-1), TermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,  30, 0.1 ));	
+                		//cout << "sub pix found" << endl;
+				drawChessboardCorners(frame, s.boardSize, pointBuff, found);
+				imshow("Camera View", frame);
+				char tempkey = (char)waitKey(5000);
+				if(tempkey == 'a')
+				{
+					imagePoints.push_back(pointBuff);
+                			cout << "Frames: " << imagePoints.size() << endl;
+            			}
+				else if(tempkey == 'n')
+					continue;
+			}
+
 			
 			//else do nothing
 			
@@ -444,15 +479,7 @@ int main(int argc, char* argv[])
 
 		if(key == ESC_KEY)	//leave the program
 		{
-			if(!isCalibrated)
-			{
-				if(runCalibrationAndSave(s,imageSize, cameraMatrix, distCoeffs, imagePoints))
-					return 0;
-				else
-					return -1;
-			}
-			else
-				return 0;
+			return 0;
 		}
 		
 		

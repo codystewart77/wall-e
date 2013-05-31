@@ -3,24 +3,24 @@
 	<Settings>
 	
 		<!-- Number of inner corners per a item row and column. (square, circle) -->
-		<BoardSize_Width>8</BoardSize_Width>
-		<BoardSize_Height>5</BoardSize_Height>
+		<BoardSize_Width>6</BoardSize_Width>
+		<BoardSize_Height>9</BoardSize_Height>
 		
 		<!-- The size of a square in some user defined metric system (pixel, millimeter)-->
 		<Square_Size>25</Square_Size>
 		
 		<!-- The maximum iterations for the stereo calibration-->
-		<Iteration_Criteria>30</Iteration_Criteria>
+		<Iteration_Criteria>90</Iteration_Criteria>
 		
 		<!-- The eps convergence-->
 		<EPS_Criteria>1e-9</EPS_Criteria>
 		
 		<!-- The output filename to save the calibration-->
-		<Output_FileName>"../calibration_data/stereo_calib_lilboard_480x360"</Output_FileName>
+		<Output_FileName>"calibration_data/stereo_calib_lilboard_480x360"</Output_FileName>
 		
 		<!-- The calibration files fdr the two cameras -->
-		<Left_Parameters>"../calibration_data/axis151_lilboard_480x360.xml"</Left_Parameters>
-		<Right_Parameters>"../calibration_data/axis152_lilboard_480x360.xml"</Right_Parameters>		
+		<Left_Parameters>"calibration_data/axis151_lilboard_480x360.xml"</Left_Parameters>
+		<Right_Parameters>"calibration_data/axis152_lilboard_480x360.xml"</Right_Parameters>		
 
    </Settings>
 </opencv_storage>
